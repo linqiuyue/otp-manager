@@ -1,0 +1,55 @@
+pipeline {
+  agent any
+  stages {
+    stage('检出') {
+      steps {
+        checkout([$class: 'GitSCM',
+        branches: [[name: env.GIT_BUILD_REF]],
+        userRemoteConfigs: [[
+          url: env.GIT_REPO_URL,
+          credentialsId: env.CREDENTIALS_ID
+        ]]])
+      }
+    }
+    stage('设置 NPM 源') {
+      steps {
+        sh 'npm config set registry https://registry.npmjs.org'
+      }
+    }
+    stage('安装依赖') {
+      steps {
+        sh 'yarn install'
+      }
+    }
+    stage('编译代码') {
+      steps {
+        sh 'yarn build'
+      }
+    }
+    stage('构建 Docker 镜像') {
+      steps {
+        sh "docker build -f Dockerfile -t ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_VERSION} ."
+      }
+    }
+    stage('推送到 Docker 仓库') {
+      steps {
+        script {
+          docker.withRegistry(
+            "${env.CCI_CURRENT_WEB_PROTOCOL}://${env.DOCKER_REGISTRY_HOST}",
+            "${env.DOCKER_REGISTRY_CREDENTIALS}"
+          ) {
+            docker.image("${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_VERSION}").push()
+          }
+        }
+      }
+    }
+  }
+  environment {
+    GENERATE_SOURCEMAP = false
+    SKIP_PREFLIGHT_CHECK = true
+    DOCKER_REGISTRY_HOST = "${env.CCI_CURRENT_TEAM}-docker.pkg.${env.CCI_CURRENT_DOMAIN}"
+    DOCKER_REGISTRY_CREDENTIALS = "${CODING_ARTIFACTS_CREDENTIALS_ID}"
+    DOCKER_IMAGE_NAME = "${env.PROJECT_NAME.toLowerCase()}/docker/otp-manager-client"
+    DOCKER_IMAGE_VERSION = "${env.GIT_TAG ? env.GIT_TAG : env.GIT_COMMIT}"
+  }
+}

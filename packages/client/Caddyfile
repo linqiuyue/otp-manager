@@ -1,0 +1,10 @@
+:80 {
+  # 设置根目录
+  root * /var/www
+
+  # 重写所有不存在的路径
+  try_files {path} /index.html
+
+  # 启用文件服务
+  file_server
+}

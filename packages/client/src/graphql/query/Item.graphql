@@ -1,0 +1,5 @@
+query Item($name: String!) {
+  item(name: $name) {
+    ...Item
+  }
+}

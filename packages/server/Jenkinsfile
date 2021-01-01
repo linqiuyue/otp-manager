@@ -1,0 +1,43 @@
+pipeline {
+  agent any
+  stages {
+    stage('检出') {
+      steps {
+        checkout([$class: 'GitSCM',
+        branches: [[name: env.GIT_BUILD_REF]],
+        userRemoteConfigs: [[
+          url: env.GIT_REPO_URL,
+          credentialsId: env.CREDENTIALS_ID
+        ]]])
+      }
+    }
+    stage('构建 Docker 镜像') {
+      steps {
+        sh """
+        docker build \
+        -f Dockerfile \
+        -t ${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_VERSION} .
+        """
+      }
+    }
+    stage('推送到 CODING Docker 制品库') {
+      steps {
+        script {
+          docker.withRegistry(
+            "${env.CCI_CURRENT_WEB_PROTOCOL}://${env.DOCKER_REGISTRY_HOST}",
+            "${env.DOCKER_REGISTRY_CREDENTIALS}"
+          ) {
+            docker.image("${env.DOCKER_IMAGE_NAME}:${env.DOCKER_IMAGE_VERSION}").push()
+          }
+        }
+
+      }
+    }
+  }
+  environment {
+    DOCKER_REGISTRY_HOST = "${env.CCI_CURRENT_TEAM}-docker.pkg.${env.CCI_CURRENT_DOMAIN}"
+    DOCKER_REGISTRY_CREDENTIALS = "${CODING_ARTIFACTS_CREDENTIALS_ID}"
+    DOCKER_IMAGE_NAME = "${env.PROJECT_NAME.toLowerCase()}/docker/otp-manager-server"
+    DOCKER_IMAGE_VERSION = "${env.GIT_TAG ? env.GIT_TAG : env.GIT_COMMIT}"
+  }
+}

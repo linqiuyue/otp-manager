@@ -1,0 +1,8 @@
+fragment Item on Item {
+  token
+  name
+  secret
+  backupCodes
+  createAt
+  updateAt
+}
