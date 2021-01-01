@@ -13,6 +13,8 @@ import {
   HealthCheckRegistryService,
 } from '@nest-boost/health-check';
 import { TerminusModule, TypeOrmHealthIndicator } from '@nestjs/terminus';
+import { join } from 'path';
+import { ServeStaticModule } from '@nestjs/serve-static';
 
 @Module({
   imports: [
@@ -26,6 +28,9 @@ import { TerminusModule, TypeOrmHealthIndicator } from '@nestjs/terminus';
       introspection: true,
       playground: true,
       tracing: true,
+    }),
+    ServeStaticModule.forRoot({
+      rootPath: join(process.cwd(), '/static/client'),
     }),
     TypeOrmModule.forRootAsync({
       inject: [ConfigService],
