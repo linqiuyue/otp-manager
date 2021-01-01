@@ -1,6 +1,4 @@
 import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ConfigModule, ConfigService } from '@nestjs/config';
@@ -10,6 +8,11 @@ import { Item } from './item/item.entity';
 import { ItemService } from './item/Item.service';
 import { GraphQLModule } from '@nestjs/graphql';
 import { ItemResolver } from './item/item.resolver';
+import {
+  HealthCheckModule,
+  HealthCheckRegistryService,
+} from '@nest-boost/health-check';
+import { TerminusModule, TypeOrmHealthIndicator } from '@nestjs/terminus';
 
 @Module({
   imports: [
@@ -36,8 +39,19 @@ import { ItemResolver } from './item/item.resolver';
       }),
     }),
     TypeOrmModule.forFeature([Item]),
+    TerminusModule,
+    HealthCheckModule,
   ],
-  controllers: [AppController],
-  providers: [AppService, ItemService, ItemResolver],
+
+  providers: [ItemService, ItemResolver],
 })
-export class AppModule {}
+export class AppModule {
+  constructor(
+    private healthCheckRegistryService: HealthCheckRegistryService,
+    private typeOrmHealthIndicator: TypeOrmHealthIndicator,
+  ) {
+    this.healthCheckRegistryService.registerIndicatorFunction([
+      () => this.typeOrmHealthIndicator.pingCheck('database'),
+    ]);
+  }
+}
