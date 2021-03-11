@@ -94,8 +94,8 @@ export const EditItemModal: FC<EditItemModalProps> = ({
           name="secret"
           rules={[
             {
-              pattern: /^[0-9A-Z]{32}$/,
-              message: "密钥只能是 32 位大写字母或数字",
+              pattern: /^[0-9A-Z]+$/,
+              message: "密钥必须为数字和大写字母！",
             },
           ]}
           getValueFromEvent={(event) => {
